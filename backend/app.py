@@ -10,8 +10,7 @@ app = Flask(__name__)
 CORS(app)
 
 # MongoDB Connection
-client = MongoClient("client = MongoClient("mongodb+srv://kavvvanna317_db_user:cseaiml17@cluster0.hqnvwka.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")")
-
+client = MongoClient("mongodb+srv://kavvvanna317_db_user:cseaiml17@cluster0.hqnvwka.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 db = client["insightiq"]
 collection = db["feedbacks"]
 
