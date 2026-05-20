@@ -1,92 +1,31 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from collections import Counter
 from pymongo import MongoClient
+from collections import Counter
+from nltk.sentiment import SentimentIntensityAnalyzer
+import nltk
+import re
+import os
+
+nltk.download('vader_lexicon')
 
 app = Flask(__name__)
 CORS(app)
 
-analyzer = SentimentIntensityAnalyzer()
+# MongoDB Connection
+client = MongoClient("PASTE_YOUR_MONGODB_CONNECTION_STRING_HERE")
 
-client = MongoClient("mongodb+srv://kavvvanna317_db_user:MjzdyAdvbsdSNZjT@cluster0.hqnvwka.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-
-db = client["insightiq"]
-
+db = client["insightiq_db"]
 collection = db["feedbacks"]
+
+# Sentiment Analyzer
+sia = SentimentIntensityAnalyzer()
 
 
 @app.route("/")
 def home():
-    return "InsightIQ Backend Running"
-
-
-@app.route("/analytics")
-def analytics():
-
-    feedback_data = list(collection.find())
-
-    positive = 0
-    negative = 0
-    neutral = 0
-
-    all_words = []
-
-    for item in feedback_data:
-
-        if item["sentiment"] == "Positive":
-            positive += 1
-
-        elif item["sentiment"] == "Negative":
-            negative += 1
-
-        else:
-            neutral += 1
-
-        words = item["feedback"].lower().split()
-
-        ignore_words = [
-            "the", "is", "a", "an", "was",
-            "this", "that", "and", "it",
-            "to", "of", "in"
-        ]
-
-        filtered_words = [
-            word for word in words
-            if word not in ignore_words
-        ]
-
-        all_words.extend(filtered_words)
-
-    trending = Counter(all_words).most_common(5)
-
-    trending_topics = []
-
-    for word, count in trending:
-
-        trending_topics.append({
-            "word": word,
-            "count": count
-        })
-
-    recent_feedback = []
-
-    latest = collection.find().sort("_id", -1).limit(5)
-
-    for item in latest:
-
-        recent_feedback.append({
-            "name": item["name"],
-            "feedback": item["feedback"],
-            "sentiment": item["sentiment"]
-        })
-
     return jsonify({
-        "positive": positive,
-        "negative": negative,
-        "neutral": neutral,
-        "trending": trending_topics,
-        "recent_feedback": recent_feedback
+        "message": "InsightIQ Backend Running 🚀"
     })
 
 
@@ -97,9 +36,9 @@ def feedback():
 
     text = data["feedback"]
 
-    sentiment_score = analyzer.polarity_scores(text)
+    score = sia.polarity_scores(text)
 
-    compound = sentiment_score["compound"]
+    compound = score["compound"]
 
     if compound >= 0.05:
         sentiment = "Positive"
@@ -121,7 +60,87 @@ def feedback():
     return jsonify({
         "message": f"Feedback received! Sentiment: {sentiment}"
     })
+
+
+@app.route("/analytics", methods=["GET"])
+def analytics():
+
+    feedbacks = list(collection.find())
+
+    positive = 0
+    negative = 0
+    neutral = 0
+
+    words = []
+
+    recent_feedback = []
+
+    stop_words = [
+        "the", "is", "a", "an", "this",
+        "that", "and", "or", "to",
+        "of", "it", "was", "very",
+        "i", "am", "are"
+    ]
+
+    for item in feedbacks:
+
+        sentiment = item["sentiment"]
+
+        if sentiment == "Positive":
+            positive += 1
+
+        elif sentiment == "Negative":
+            negative += 1
+
+        else:
+            neutral += 1
+
+        text_words = re.findall(
+            r'\b\w+\b',
+            item["feedback"].lower()
+        )
+
+        filtered = [
+            word for word in text_words
+            if word not in stop_words
+        ]
+
+        words.extend(filtered)
+
+        recent_feedback.append({
+            "name": item["name"],
+            "feedback": item["feedback"],
+            "sentiment": item["sentiment"]
+        })
+
+    trending = Counter(words).most_common(5)
+
+    trending_data = []
+
+    for word, count in trending:
+
+        trending_data.append({
+            "word": word,
+            "count": count
+        })
+
+    recent_feedback = recent_feedback[::-1][:5]
+
+    return jsonify({
+        "positive": positive,
+        "negative": negative,
+        "neutral": neutral,
+        "trending": trending_data,
+        "recent_feedback": recent_feedback
+    })
+
+
 if __name__ == "__main__":
-    import os
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+
+    port = int(os.environ.get("PORT", 10000))
+
+    app.run(
+        host="0.0.0.0",
+        port=port,
+        debug=False
+    )
