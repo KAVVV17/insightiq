@@ -17,9 +17,11 @@ import {
 
 function App() {
 
+  // BACKEND URL
   const BACKEND_URL =
     "https://insightiq-backend-ueiz.onrender.com";
 
+  // STATES
   const [name, setName] = useState("");
   const [feedback, setFeedback] = useState("");
   const [loading, setLoading] = useState(false);
@@ -32,6 +34,7 @@ function App() {
     recent_feedback: [],
   });
 
+  // FETCH ANALYTICS
   const fetchAnalytics = async () => {
 
     try {
@@ -44,23 +47,27 @@ function App() {
 
     } catch (error) {
 
-      console.log(error);
+      console.log("Analytics Error:", error);
 
     }
   };
 
+  // LOAD DATA
   useEffect(() => {
 
     fetchAnalytics();
 
   }, []);
 
+  // SUBMIT FEEDBACK
   const submitFeedback = async (e) => {
 
     e.preventDefault();
 
     if (!name || !feedback) {
+
       alert("Please fill all fields");
+
       return;
     }
 
@@ -85,7 +92,7 @@ function App() {
 
     } catch (error) {
 
-      console.log(error);
+      console.log("Submission Error:", error);
 
       alert("Submission Failed");
 
@@ -96,6 +103,7 @@ function App() {
     }
   };
 
+  // PIE DATA
   const pieData = [
     {
       name: "Positive",
@@ -121,14 +129,16 @@ function App() {
 
     <div className="min-h-screen bg-gradient-to-r from-blue-100 to-pink-100 p-6">
 
+      {/* TITLE */}
       <h1 className="text-5xl font-bold text-center text-blue-700 mb-3">
         InsightIQ 📊
       </h1>
 
       <p className="text-center text-gray-700 mb-10">
-        Real-Time Sentiment & Trend Analyzer
+        Real-Time Sentiment Analysis Dashboard
       </p>
 
+      {/* CARDS */}
       <div className="grid md:grid-cols-3 gap-6 mb-10">
 
         <div className="bg-white rounded-3xl p-6 shadow-xl text-center">
@@ -169,8 +179,10 @@ function App() {
 
       </div>
 
+      {/* MAIN GRID */}
       <div className="grid md:grid-cols-2 gap-8">
 
+        {/* FORM */}
         <div className="bg-white rounded-3xl p-8 shadow-xl">
 
           <h2 className="text-3xl font-bold mb-6 text-blue-700">
@@ -184,26 +196,26 @@ function App() {
               placeholder="Enter your name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full border p-4 rounded-2xl mb-5"
+              className="w-full border p-4 rounded-2xl mb-5 outline-none"
             />
 
             <textarea
               placeholder="Write your feedback..."
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
-              className="w-full border p-4 rounded-2xl mb-5 h-36"
+              className="w-full border p-4 rounded-2xl mb-5 h-36 outline-none"
             ></textarea>
 
             <button
               type="submit"
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-2xl w-full font-semibold"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-2xl w-full font-semibold transition-all"
             >
 
               {
                 loading
                   ? "Submitting..."
-                  : "Submit Feedback"
+                  : "Submit Feedback 🚀"
               }
 
             </button>
@@ -212,10 +224,11 @@ function App() {
 
         </div>
 
+        {/* PIE CHART */}
         <div className="bg-white rounded-3xl p-8 shadow-xl">
 
           <h2 className="text-3xl font-bold mb-6 text-pink-700">
-            Sentiment Chart 📈
+            Sentiment Overview 📈
           </h2>
 
           <ResponsiveContainer width="100%" height={300}>
@@ -254,6 +267,7 @@ function App() {
 
       </div>
 
+      {/* TRENDING */}
       <div className="bg-white rounded-3xl p-8 shadow-xl mt-10">
 
         <h2 className="text-3xl font-bold mb-6 text-purple-700">
@@ -283,6 +297,7 @@ function App() {
 
       </div>
 
+      {/* RECENT FEEDBACK */}
       <div className="bg-white rounded-3xl p-8 shadow-xl mt-10">
 
         <h2 className="text-3xl font-bold mb-6 text-green-700">
@@ -324,9 +339,10 @@ function App() {
 
       </div>
 
+      {/* FOOTER */}
       <footer className="text-center mt-12 text-gray-700">
 
-        Built with ❤️ using React, Flask & MongoDB
+        Built with ❤️ using React + Flask + MongoDB
 
       </footer>
 
