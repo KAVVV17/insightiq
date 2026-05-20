@@ -1,146 +1,133 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from collections import Counter
-from nltk.sentiment import SentimentIntensityAnalyzer
-import nltk
 import re
 import os
-
-nltk.download('vader_lexicon')
 
 app = Flask(__name__)
 CORS(app)
 
 # MongoDB Connection
-client = MongoClient("PASTE_YOUR_MONGODB_CONNECTION_STRING_HERE")
+client = MongoClient("client = MongoClient("mongodb+srv://kavvvanna317_db_user:cseaiml17@cluster0.hqnvwka.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")")
 
-db = client["insightiq_db"]
+db = client["insightiq"]
 collection = db["feedbacks"]
 
-# Sentiment Analyzer
-sia = SentimentIntensityAnalyzer()
+analyzer = SentimentIntensityAnalyzer()
 
-
+# HOME
 @app.route("/")
 def home():
     return jsonify({
         "message": "InsightIQ Backend Running 🚀"
     })
 
-
+# FEEDBACK ROUTE
 @app.route("/feedback", methods=["POST"])
 def feedback():
 
-    data = request.json
+    try:
 
-    text = data["feedback"]
+        data = request.json
 
-    score = sia.polarity_scores(text)
+        name = data.get("name")
+        text = data.get("feedback")
 
-    compound = score["compound"]
+        score = analyzer.polarity_scores(text)
+        compound = score["compound"]
 
-    if compound >= 0.05:
-        sentiment = "Positive"
+        if compound >= 0.05:
+            sentiment = "Positive"
 
-    elif compound <= -0.05:
-        sentiment = "Negative"
-
-    else:
-        sentiment = "Neutral"
-
-    feedback_item = {
-        "name": data["name"],
-        "feedback": text,
-        "sentiment": sentiment
-    }
-
-    collection.insert_one(feedback_item)
-
-    return jsonify({
-        "message": f"Feedback received! Sentiment: {sentiment}"
-    })
-
-
-@app.route("/analytics", methods=["GET"])
-def analytics():
-
-    feedbacks = list(collection.find())
-
-    positive = 0
-    negative = 0
-    neutral = 0
-
-    words = []
-
-    recent_feedback = []
-
-    stop_words = [
-        "the", "is", "a", "an", "this",
-        "that", "and", "or", "to",
-        "of", "it", "was", "very",
-        "i", "am", "are"
-    ]
-
-    for item in feedbacks:
-
-        sentiment = item["sentiment"]
-
-        if sentiment == "Positive":
-            positive += 1
-
-        elif sentiment == "Negative":
-            negative += 1
+        elif compound <= -0.05:
+            sentiment = "Negative"
 
         else:
-            neutral += 1
+            sentiment = "Neutral"
 
-        text_words = re.findall(
-            r'\b\w+\b',
-            item["feedback"].lower()
+        feedback_item = {
+            "name": name,
+            "feedback": text,
+            "sentiment": sentiment
+        }
+
+        collection.insert_one(feedback_item)
+
+        return jsonify({
+            "message": f"Feedback received! Sentiment: {sentiment}"
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+# ANALYTICS
+@app.route("/analytics")
+def analytics():
+
+    try:
+
+        data = list(collection.find({}, {"_id": 0}))
+
+        positive = len(
+            [x for x in data if x["sentiment"] == "Positive"]
         )
 
-        filtered = [
-            word for word in text_words
-            if word not in stop_words
-        ]
+        negative = len(
+            [x for x in data if x["sentiment"] == "Negative"]
+        )
 
-        words.extend(filtered)
+        neutral = len(
+            [x for x in data if x["sentiment"] == "Neutral"]
+        )
 
-        recent_feedback.append({
-            "name": item["name"],
-            "feedback": item["feedback"],
-            "sentiment": item["sentiment"]
+        words = []
+
+        for item in data:
+
+            text = item["feedback"].lower()
+
+            found = re.findall(r'\b\w+\b', text)
+
+            words.extend(found)
+
+        common = Counter(words).most_common(5)
+
+        trending = []
+
+        for word, count in common:
+
+            trending.append({
+                "word": word,
+                "count": count
+            })
+
+        recent = data[-5:]
+
+        return jsonify({
+            "positive": positive,
+            "negative": negative,
+            "neutral": neutral,
+            "trending": trending,
+            "recent_feedback": recent
         })
 
-    trending = Counter(words).most_common(5)
+    except Exception as e:
 
-    trending_data = []
+        return jsonify({
+            "error": str(e)
+        }), 500
 
-    for word, count in trending:
-
-        trending_data.append({
-            "word": word,
-            "count": count
-        })
-
-    recent_feedback = recent_feedback[::-1][:5]
-
-    return jsonify({
-        "positive": positive,
-        "negative": negative,
-        "neutral": neutral,
-        "trending": trending_data,
-        "recent_feedback": recent_feedback
-    })
-
-
+# RENDER PORT
 if __name__ == "__main__":
 
     port = int(os.environ.get("PORT", 10000))
 
     app.run(
         host="0.0.0.0",
-        port=port,
-        debug=False
+        port=port
     )
