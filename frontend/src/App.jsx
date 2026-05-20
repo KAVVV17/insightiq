@@ -1,330 +1,208 @@
-import { useState, useEffect } from "react"
-import axios from "axios"
-
+import { useEffect, useState } from "react";
+import axios from "axios";
 import {
   PieChart,
   Pie,
   Cell,
   Tooltip,
-  Legend
-} from "recharts"
+  Legend,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from "recharts";
 
 function App() {
-
-  const [name, setName] = useState("")
-  const [feedback, setFeedback] = useState("")
-  const [result, setResult] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [name, setName] = useState("");
+  const [feedback, setFeedback] = useState("");
 
   const [analytics, setAnalytics] = useState({
     positive: 0,
     negative: 0,
     neutral: 0,
     trending: [],
-    recent_feedback: []
-  })
+    recent_feedback: [],
+  });
+
+  const BACKEND_URL =
+    "https://insightiq-backend-ueiz.onrender.com";
 
   const fetchAnalytics = async () => {
-
     try {
-
       const response = await axios.get(
-        "https://insightiq-backend-ueiz.onrender.com"
-      )
+        `${BACKEND_URL}/analytics`
+      );
 
-      setAnalytics(response.data)
-
+      setAnalytics(response.data);
     } catch (error) {
-
-      console.log(error)
-
+      console.log(error);
     }
-  }
+  };
 
   useEffect(() => {
+    fetchAnalytics();
+  }, []);
 
-    fetchAnalytics()
-
-    const interval = setInterval(() => {
-      fetchAnalytics()
-    }, 3000)
-
-    return () => clearInterval(interval)
-
-  }, [])
-
-  const handleSubmit = async () => {
+  const submitFeedback = async (e) => {
+    e.preventDefault();
 
     if (!name || !feedback) {
-      alert("Please fill all fields")
-      return
-    }
-
-    setLoading(true)
-
-    const data = {
-      name: name,
-      feedback: feedback
+      alert("Please fill all fields");
+      return;
     }
 
     try {
+      await axios.post(`${BACKEND_URL}/feedback`, {
+        name,
+        feedback,
+      });
 
-      const response = await axios.post(
-        "https://insightiq-backend-ueiz.onrender.com",
-        data
-      )
+      alert("Feedback Submitted 🚀");
 
-      setResult(response.data.message)
+      setName("");
+      setFeedback("");
 
-      setName("")
-      setFeedback("")
-
-      fetchAnalytics()
-
+      fetchAnalytics();
     } catch (error) {
-
-      console.log(error)
-      alert("Error submitting")
-
-    } finally {
-
-      setLoading(false)
-
+      console.log(error);
+      alert("Submission failed");
     }
-  }
+  };
 
-  const chartData = [
+  const pieData = [
     {
       name: "Positive",
-      value: analytics.positive
+      value: analytics.positive,
     },
     {
       name: "Negative",
-      value: analytics.negative
+      value: analytics.negative,
     },
     {
       name: "Neutral",
-      value: analytics.neutral
-    }
-  ]
+      value: analytics.neutral,
+    },
+  ];
 
-  const COLORS = [
-    "#22c55e",
-    "#ef4444",
-    "#6b7280"
-  ]
+  const COLORS = ["#22c55e", "#ef4444", "#facc15"];
 
   return (
-
-    <div className="min-h-screen bg-gradient-to-r from-blue-100 to-pink-100 flex flex-col items-center p-8">
-
-      <h1 className="text-6xl font-extrabold text-blue-700 drop-shadow-lg">
+    <div className="min-h-screen bg-black text-white p-6">
+      <h1 className="text-4xl font-bold text-center mb-8">
         InsightIQ 📊
       </h1>
 
-      <p className="mt-4 text-gray-700 text-lg">
-        Real-Time Sentiment & Trend Analyzer
-      </p>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mt-12">
-
-        <div className="bg-white/60 backdrop-blur-lg border border-white/30 p-6 rounded-3xl text-center shadow-xl hover:scale-105 transition">
-
-          <h2 className="text-4xl font-bold text-green-600">
-            {analytics.positive}
+      <div className="grid md:grid-cols-2 gap-8">
+        {/* FORM */}
+        <div className="bg-zinc-900 p-6 rounded-2xl shadow-lg">
+          <h2 className="text-2xl font-semibold mb-4">
+            Submit Feedback
           </h2>
 
-          <p className="mt-2 text-lg font-medium">
-            Positive
-          </p>
+          <form onSubmit={submitFeedback}>
+            <input
+              type="text"
+              placeholder="Enter your name"
+              className="w-full p-3 rounded-lg bg-zinc-800 mb-4 outline-none"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
 
-        </div>
+            <textarea
+              placeholder="Enter feedback"
+              className="w-full p-3 rounded-lg bg-zinc-800 mb-4 outline-none"
+              rows="5"
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+            ></textarea>
 
-        <div className="bg-white/60 backdrop-blur-lg border border-white/30 p-6 rounded-3xl text-center shadow-xl hover:scale-105 transition">
-
-          <h2 className="text-4xl font-bold text-red-500">
-            {analytics.negative}
-          </h2>
-
-          <p className="mt-2 text-lg font-medium">
-            Negative
-          </p>
-
-        </div>
-
-        <div className="bg-white/60 backdrop-blur-lg border border-white/30 p-6 rounded-3xl text-center shadow-xl hover:scale-105 transition">
-
-          <h2 className="text-4xl font-bold text-gray-700">
-            {analytics.neutral}
-          </h2>
-
-          <p className="mt-2 text-lg font-medium">
-            Neutral
-          </p>
-
-        </div>
-
-      </div>
-
-      <div className="bg-white/70 backdrop-blur-lg border border-white/30 p-8 rounded-3xl shadow-2xl mt-12 w-full max-w-2xl">
-
-        <h2 className="text-3xl font-bold mb-6 text-center text-blue-700">
-          Give Feedback
-        </h2>
-
-        <input
-          type="text"
-          placeholder="Enter your name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full p-4 rounded-2xl border mb-5 focus:outline-none focus:ring-2 focus:ring-blue-400"
-        />
-
-        <textarea
-          placeholder="Write your feedback..."
-          value={feedback}
-          onChange={(e) => setFeedback(e.target.value)}
-          className="w-full p-4 rounded-2xl border mb-5 h-36 focus:outline-none focus:ring-2 focus:ring-blue-400"
-        ></textarea>
-
-        <button
-          onClick={handleSubmit}
-          disabled={loading}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-4 rounded-2xl w-full transition duration-300 shadow-lg"
-        >
-
-          {
-            loading
-              ? "Submitting..."
-              : "Submit Feedback"
-          }
-
-        </button>
-
-        {
-          result && (
-            <div className="mt-6 bg-green-100 text-green-700 p-4 rounded-2xl text-center font-semibold shadow">
-              {result}
-            </div>
-          )
-        }
-
-      </div>
-
-      <div className="bg-white/70 backdrop-blur-lg border border-white/30 p-8 rounded-3xl shadow-2xl mt-12 w-full max-w-2xl">
-
-        <h2 className="text-3xl font-bold mb-6 text-center text-purple-700">
-          Trending Topics 🔥
-        </h2>
-
-        {
-          analytics.trending.map((item, index) => (
-
-            <div
-              key={index}
-              className="flex justify-between items-center bg-white p-4 rounded-2xl mb-4 shadow hover:scale-105 transition"
+            <button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-700 transition-all px-6 py-3 rounded-xl w-full font-semibold"
             >
+              Submit
+            </button>
+          </form>
+        </div>
 
-              <span className="font-semibold text-lg">
-                #{item.word}
-              </span>
+        {/* PIE CHART */}
+        <div className="bg-zinc-900 p-6 rounded-2xl shadow-lg">
+          <h2 className="text-2xl font-semibold mb-4">
+            Sentiment Overview
+          </h2>
 
-              <span className="bg-blue-100 px-4 py-1 rounded-full font-bold text-blue-700">
-                {item.count}
-              </span>
-
-            </div>
-
-          ))
-        }
-
-      </div>
-
-      <div className="bg-white/70 backdrop-blur-lg border border-white/30 p-8 rounded-3xl shadow-2xl mt-12 w-full max-w-2xl">
-
-        <h2 className="text-3xl font-bold mb-6 text-center text-pink-700">
-          Sentiment Chart 📈
-        </h2>
-
-        <div className="flex justify-center">
-
-          <PieChart width={350} height={350}>
-
-            <Pie
-              data={chartData}
-              cx="50%"
-              cy="50%"
-              outerRadius={120}
-              dataKey="value"
-              label
-            >
-
-              {
-                chartData.map((entry, index) => (
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={pieData}
+                dataKey="value"
+                outerRadius={100}
+                label
+              >
+                {pieData.map((entry, index) => (
                   <Cell
                     key={index}
                     fill={COLORS[index % COLORS.length]}
                   />
-                ))
-              }
+                ))}
+              </Pie>
 
-            </Pie>
-
-            <Tooltip />
-            <Legend />
-
-          </PieChart>
-
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
-
       </div>
 
-      <div className="bg-white/70 backdrop-blur-lg border border-white/30 p-8 rounded-3xl shadow-2xl mt-12 w-full max-w-2xl">
-
-        <h2 className="text-3xl font-bold mb-6 text-center text-green-700">
-          Recent Feedback 💬
+      {/* TRENDING */}
+      <div className="bg-zinc-900 p-6 rounded-2xl shadow-lg mt-8">
+        <h2 className="text-2xl font-semibold mb-4">
+          Trending Keywords
         </h2>
 
-        {
-          analytics.recent_feedback.map((item, index) => (
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={analytics.trending}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="word" />
+            <YAxis />
+            <Tooltip />
 
+            <Bar dataKey="count" fill="#3b82f6" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* RECENT FEEDBACK */}
+      <div className="bg-zinc-900 p-6 rounded-2xl shadow-lg mt-8">
+        <h2 className="text-2xl font-semibold mb-4">
+          Recent Feedback
+        </h2>
+
+        <div className="space-y-4">
+          {analytics.recent_feedback.map((item, index) => (
             <div
               key={index}
-              className="bg-white p-5 rounded-2xl shadow mb-4"
+              className="bg-zinc-800 p-4 rounded-xl"
             >
+              <h3 className="font-bold text-lg">
+                {item.name}
+              </h3>
 
-              <div className="flex justify-between mb-2">
-
-                <h3 className="font-bold text-lg">
-                  {item.name}
-                </h3>
-
-                <span className="text-sm font-semibold text-blue-600">
-                  {item.sentiment}
-                </span>
-
-              </div>
-
-              <p className="text-gray-700">
+              <p className="text-zinc-300 mt-2">
                 {item.feedback}
               </p>
 
+              <span className="inline-block mt-3 px-3 py-1 rounded-full bg-blue-600 text-sm">
+                {item.sentiment}
+              </span>
             </div>
-
-          ))
-        }
-
+          ))}
+        </div>
       </div>
-
-      <footer className="mt-16 text-center text-gray-600 text-sm">
-
-        Built with ❤️ using React, Flask & MongoDB
-
-      </footer>
-
     </div>
-
-  )
+  );
 }
 
-export default App
+export default App;
