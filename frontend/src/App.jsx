@@ -29,7 +29,7 @@ function App() {
     try {
 
       const response = await axios.get(
-        "http://127.0.0.1:5000/analytics"
+        "https://insightiq-backend-ueiz.onrender.com"
       )
 
       setAnalytics(response.data)
@@ -70,7 +70,7 @@ function App() {
     try {
 
       const response = await axios.post(
-        "http://127.0.0.1:5000/feedback",
+        "https://insightiq-backend-ueiz.onrender.com",
         data
       )
 
